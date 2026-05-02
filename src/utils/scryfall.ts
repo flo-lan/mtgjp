@@ -1,0 +1,55 @@
+import axios from 'axios';
+
+export interface CardData {
+  id: string;
+  name: string;
+  printed_name?: string;
+  type_line: string;
+  printed_type_line?: string;
+  oracle_text?: string;
+  printed_text?: string;
+  mana_cost: string;
+  colors: string[];
+  power?: string;
+  toughness?: string;
+  image_uris?: {
+    small: string;
+    normal: string;
+    large: string;
+    png: string;
+    art_crop: string;
+    border_crop: string;
+  };
+  set: string;
+  collector_number: string;
+}
+
+const SCRYFALL_API = 'https://api.scryfall.com';
+
+/**
+ * Searches for a card by name. Returns a list of matches.
+ */
+export async function searchCards(query: string): Promise<CardData[]> {
+  try {
+    const response = await axios.get(`${SCRYFALL_API}/cards/search`, {
+      params: { q: query },
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error searching cards:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetches the Japanese localized version of a specific card.
+ */
+export async function getJapaneseCard(set: string, collectorNumber: string): Promise<CardData | null> {
+  try {
+    const response = await axios.get(`${SCRYFALL_API}/cards/${set}/${collectorNumber}/ja`);
+    return response.data;
+  } catch (error) {
+    console.warn(`Could not find Japanese localization for ${set} ${collectorNumber}`);
+    return null;
+  }
+}

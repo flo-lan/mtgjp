@@ -2,10 +2,12 @@ import React from 'react';
 import { Text, StyleSheet, View, Pressable } from 'react-native';
 import { JA_DICT, SORTED_DICT_KEYS, DictEntry, WordCategory } from '../utils/dictionary';
 import ManaSymbol from './native-mtg-card/ManaSymbol';
+import { Ruby } from './Ruby';
 
 interface Props {
   text: string;
   onWordSelect: (entry: DictEntry) => void;
+  showFurigana?: boolean;
   style?: any;
 }
 
@@ -47,7 +49,7 @@ const chipStyle: Record<'keyword' | 'action' | 'noun', any> = {
   },
 };
 
-export function InteractiveText({ text, onWordSelect, style }: Props) {
+export function InteractiveText({ text, onWordSelect, showFurigana = false, style }: Props) {
   if (!text) return null;
 
   return (
@@ -74,9 +76,12 @@ export function InteractiveText({ text, onWordSelect, style }: Props) {
                   style={chipStyle[entry.category as 'keyword' | 'action' | 'noun']}
                   onPress={() => onWordSelect(entry)}
                 >
-                  <Text style={[styles.baseText, isKeyword && styles.keywordText, style]}>
-                    {part}
-                  </Text>
+                  <Ruby
+                    text={part}
+                    reading={showFurigana ? entry.reading : undefined}
+                    textStyle={[styles.baseText, isKeyword && styles.keywordText, style]}
+                    readingStyle={isKeyword ? styles.keywordReading : undefined}
+                  />
                 </Pressable>
               );
             }
@@ -93,11 +98,11 @@ const styles = StyleSheet.create({
   line: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginBottom: 1,
   },
   symbolWrapper: {
-    alignSelf: 'center',
+    alignSelf: 'flex-end',
     marginHorizontal: 1,
   },
   baseText: {
@@ -109,5 +114,8 @@ const styles = StyleSheet.create({
   keywordText: {
     fontFamily: 'NotoSansJP_700Bold',
     color: '#4A2800',
+  },
+  keywordReading: {
+    color: 'rgba(74,40,0,0.5)',
   },
 });

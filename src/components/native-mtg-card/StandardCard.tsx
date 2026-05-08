@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { View, Text, StyleSheet, Image, ImageBackground } from 'react-native';
 import ManaSymbol from './ManaSymbol';
+import { FuriganaText } from '../FuriganaText';
 import {
   ColoredSvg,
   useCardTheme,
@@ -144,13 +145,23 @@ export default function StandardCard({
         </View>
 
         <View style={styles.cardName}>
-          <Text style={styles.cardNameText} numberOfLines={1}>{cardName}</Text>
+          <FuriganaText
+            text={cardName}
+            textStyle={styles.cardNameText}
+            readingStyle={styles.cardNameReading}
+            numberOfLines={1}
+          />
         </View>
 
         <ManaCostRow manaCost={manaCost} style={styles.manaCost} />
 
         <View style={styles.typeLine}>
-          <Text style={styles.typeLineText} numberOfLines={1}>{typeLine}</Text>
+          <FuriganaText
+            text={typeLine}
+            textStyle={styles.typeLineText}
+            readingStyle={styles.typeLineReading}
+            numberOfLines={1}
+          />
         </View>
 
         <SetSymbolIcon
@@ -315,6 +326,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: 'black',
   },
+  cardNameReading: {
+    color: 'rgba(0,0,0,0.4)',
+  },
   manaCost: {
     position: 'absolute',
     right: '8%',
@@ -331,6 +345,9 @@ const styles = StyleSheet.create({
     fontFamily: 'NotoSansJP_700Bold',
     fontSize: 20,
     color: 'black',
+  },
+  typeLineReading: {
+    color: 'rgba(0,0,0,0.4)',
   },
   setSymbol: {
     position: 'absolute',

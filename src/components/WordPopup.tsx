@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { DictEntry, WordCategory } from "../utils/dictionary";
+import { Ruby } from "./Ruby";
 
 interface Props {
   entry: DictEntry | null;
@@ -41,7 +42,12 @@ export function WordPopup({ entry, onClose }: Props) {
           </Pressable>
         </View>
 
-        <Text style={styles.word}>{entry.word}</Text>
+        <Ruby
+          text={entry.word}
+          reading={entry.reading}
+          textStyle={styles.word}
+          readingStyle={styles.wordReading}
+        />
         <Text style={styles.translation}>{entry.translation}</Text>
       </Pressable>
     </Pressable>
@@ -105,6 +111,10 @@ const styles = StyleSheet.create({
     fontSize: 36,
     color: "#fff",
     marginBottom: 6,
+  },
+  wordReading: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.4)",
   },
   translation: {
     fontFamily: "NotoSansJP_400Regular",

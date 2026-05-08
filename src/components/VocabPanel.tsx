@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { extractVocab, DictEntry, WordCategory } from "../utils/dictionary";
+import { Ruby } from "./Ruby";
 
 interface Props {
   text: string;
@@ -64,9 +65,12 @@ export function VocabPanel({ text, onWordSelect }: Props) {
                     ]}
                     onPress={() => onWordSelect(entry)}
                   >
-                    <Text style={[styles.chipJa, { color: s.label }]}>
-                      {entry.word}
-                    </Text>
+                    <Ruby
+                      text={entry.word}
+                      reading={entry.reading}
+                      textStyle={[styles.chipJa, { color: s.label }]}
+                      readingStyle={{ color: s.label, opacity: 0.55 }}
+                    />
                     <Text style={styles.chipEn}>{entry.translation}</Text>
                   </Pressable>
                 ))}

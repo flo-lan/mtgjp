@@ -32,10 +32,14 @@ const SCRYFALL_API = 'https://api.scryfall.com';
 /**
  * Searches for a card by name. Returns a list of matches.
  */
+// Only kanji triggers lang:ja — hiragana/katakana phonetic readings won't match Scryfall's Japanese printed names
+const KANJI_RE = /[一-鿿]/;
+
 export async function searchCards(query: string): Promise<CardData[]> {
   try {
+    const q = KANJI_RE.test(query) ? `lang:ja ${query}` : query;
     const response = await axios.get(`${SCRYFALL_API}/cards/search`, {
-      params: { q: query },
+      params: { q },
     });
     return response.data.data;
   } catch (error) {

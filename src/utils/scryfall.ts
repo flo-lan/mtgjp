@@ -22,6 +22,9 @@ export interface CardData {
   };
   set: string;
   collector_number: string;
+  rarity?: string;
+  flavor_text?: string;
+  artist?: string;
 }
 
 const SCRYFALL_API = 'https://api.scryfall.com';

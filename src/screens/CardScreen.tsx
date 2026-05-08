@@ -3,7 +3,9 @@ import { View, StyleSheet, ActivityIndicator, Text, ScrollView } from 'react-nat
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { getJapaneseCard, CardData } from '../utils/scryfall';
+import { DictEntry } from '../utils/dictionary';
 import { CardRenderer } from '../components/CardRenderer';
+import { WordPopup } from '../components/WordPopup';
 
 type CardScreenRouteProp = RouteProp<RootStackParamList, 'Card'>;
 
@@ -15,6 +17,7 @@ export function CardScreen({ route }: Props) {
   const { set, collectorNumber } = route.params;
   const [card, setCard] = useState<CardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedEntry, setSelectedEntry] = useState<DictEntry | null>(null);
 
   useEffect(() => {
     async function fetchCard() {
@@ -43,22 +46,28 @@ export function CardScreen({ route }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer} style={styles.container}>
-      <CardRenderer card={card} />
-    </ScrollView>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <CardRenderer card={card} onWordSelect={setSelectedEntry} />
+      </ScrollView>
+
+      <WordPopup
+        entry={selectedEntry}
+        onClose={() => setSelectedEntry(null)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333',
+    backgroundColor: '#1a1a1a',
   },
   scrollContainer: {
     padding: 16,
     paddingTop: 24,
-    minHeight: '100%',
-    justifyContent: 'center',
+    paddingBottom: 40,
   },
   centered: {
     justifyContent: 'center',
@@ -71,5 +80,5 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#ff6b6b',
     fontSize: 16,
-  }
+  },
 });

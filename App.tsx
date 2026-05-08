@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useFonts, NotoSansJP_400Regular, NotoSansJP_700Bold } from '@expo-google-fonts/noto-sans-jp';
 import { SearchScreen } from './src/screens/SearchScreen';
 import { CardScreen } from './src/screens/CardScreen';
 
@@ -12,18 +13,22 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  const [fontsLoaded] = useFonts({ NotoSansJP_400Regular, NotoSansJP_700Bold });
+
+  if (!fontsLoaded) return null;
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Search">
-        <Stack.Screen 
-          name="Search" 
-          component={SearchScreen} 
-          options={{ title: 'MTG Japanese Learner' }} 
+        <Stack.Screen
+          name="Search"
+          component={SearchScreen}
+          options={{ title: 'MTG Japanese Learner' }}
         />
-        <Stack.Screen 
-          name="Card" 
-          component={CardScreen} 
-          options={{ title: 'Card Details' }} 
+        <Stack.Screen
+          name="Card"
+          component={CardScreen}
+          options={{ title: 'Card Details' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

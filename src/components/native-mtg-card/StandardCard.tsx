@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Image, ImageBackground } from 'react-native';
 import ManaSymbol from './ManaSymbol';
 import {
   ColoredSvg,
-  DropShadow,
   useCardTheme,
   getThemeVars,
   ManaCostRow,
@@ -120,7 +119,6 @@ export default function StandardCard({
 
         <ColoredSvg xml={edgesBorderRaw} vars={borderVars} style={styles.edgesBorder} />
         <ColoredSvg xml={edgesShadowRaw} vars={borderVars} style={styles.edgesShadow} />
-        <DropShadow style={styles.dropShadow} />
 
         {legendary && (
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -313,7 +311,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardNameText: {
-    fontWeight: 'bold',
+    fontFamily: 'NotoSansJP_700Bold',
     fontSize: 24,
     color: 'black',
   },
@@ -330,7 +328,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   typeLineText: {
-    fontWeight: 'bold',
+    fontFamily: 'NotoSansJP_700Bold',
     fontSize: 20,
     color: 'black',
   },
@@ -350,6 +348,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rulesText: {
+    fontFamily: 'NotoSansJP_400Regular',
     fontSize: 16,
     color: 'black',
     lineHeight: 22,
@@ -367,6 +366,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   flavorText: {
+    fontFamily: 'NotoSansJP_400Regular',
     fontStyle: 'italic',
     fontSize: 16,
     color: 'black',
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ptText: {
-    fontWeight: 'bold',
+    fontFamily: 'NotoSansJP_700Bold',
     fontSize: 24,
     color: 'black',
   },

@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   metaText: {
+    fontFamily: 'NotoSansJP_400Regular',
     fontSize: 7,
     color: 'white',
   }

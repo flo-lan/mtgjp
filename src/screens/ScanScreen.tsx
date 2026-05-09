@@ -53,13 +53,14 @@ export function ScanScreen({ navigation }: { navigation: Nav }) {
 
         const cardUri = scannedImages[0];
 
-        // Decode the perspective-corrected card image to get its dimensions.
         const cardRef = await ImageManipulator.manipulate(cardUri).renderAsync();
-        console.log('[Scan] card dimensions:', cardRef.width, 'x', cardRef.height);
 
-        // Send the full card to OCR (no crop) to test if ML Kit can read the Japanese text.
-        const { uri } = await cardRef.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
-        console.log('[Scan] image uri:', uri);
+        // The name strip is the top ~12% of the perspective-corrected card.
+        const strippedRef = await ImageManipulator.manipulate(cardRef)
+          .crop({ originX: 0, originY: 0, width: cardRef.width, height: Math.floor(cardRef.height * 0.12) })
+          .resize({ width: cardRef.width * 2 })
+          .renderAsync();
+        const { uri } = await strippedRef.saveAsync({ format: SaveFormat.PNG });
 
         const name = await recognizeCardName(uri);
         if (!name) {

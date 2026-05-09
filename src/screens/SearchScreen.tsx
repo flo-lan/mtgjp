@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,21 +8,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Image,
   Platform,
   StatusBar,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
 import { searchCards, CardData } from "../utils/scryfall";
-import { recognizeCardName } from "../utils/ocr";
 import { JA_DICT, DictEntry, groupColor } from "../utils/dictionary";
 import { Ruby } from "../components/Ruby";
 import { WordPopup } from "../components/WordPopup";
 
-type Nav = NativeStackNavigationProp<RootStackParamList, "Search">;
+type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 
 const GROUP_META: Record<string, { tag: string; desc: string }> = {
   Evergreen: { tag: "常在", desc: "Core keyword abilities" },
@@ -41,11 +38,10 @@ const GROUP_META: Record<string, { tag: string; desc: string }> = {
 const TOP_PAD =
   Platform.OS === "ios" ? 54 : (StatusBar.currentHeight ?? 0) + 16;
 
-export function SearchScreen({ navigation }: { navigation: Nav }) {
+export function SearchScreen({ navigation, route }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [scanning, setScanning] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<DictEntry | null>(null);
 
   const wotd = useMemo<DictEntry>(() => {
@@ -70,28 +66,15 @@ export function SearchScreen({ navigation }: { navigation: Nav }) {
     setLoading(false);
   }, []);
 
-  const handleScan = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      base64: true,
-      quality: 1,
-    });
-    if (result.canceled || !result.assets?.[0]?.base64) return;
-    setScanning(true);
-    try {
-      const name = await recognizeCardName(result.assets[0].base64);
-      if (name) {
-        setQuery(name);
-        await handleSearch(name);
-      } else {
-        Alert.alert(
-          "Not recognized",
-          "Could not read card name. Try better lighting.",
-        );
-      }
-    } finally {
-      setScanning(false);
+  useEffect(() => {
+    const scanResult = route.params?.scanResult;
+    if (scanResult) {
+      setQuery(scanResult);
+      handleSearch(scanResult);
     }
-  };
+  }, [route.params?.scanResult]);
+
+  const handleScan = () => navigation.navigate("Scan");
 
   const isSearchActive = query.trim().length > 0;
   const wotdC = groupColor(wotd.group);
@@ -272,14 +255,6 @@ export function SearchScreen({ navigation }: { navigation: Nav }) {
 
           <View style={{ height: 40 }} />
         </ScrollView>
-      )}
-
-      {/* Scan overlay */}
-      {scanning && (
-        <View style={styles.scanOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.scanOverlayText}>Reading card…</Text>
-        </View>
       )}
 
       <WordPopup entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
@@ -531,16 +506,4 @@ const styles = StyleSheet.create({
     color: "rgba(244,244,245,0.25)",
   },
 
-  // Scan overlay
-  scanOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scanOverlayText: {
-    color: "#fff",
-    fontSize: 16,
-    marginTop: 12,
-  },
 });

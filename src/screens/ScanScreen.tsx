@@ -13,6 +13,7 @@ import {
   AppState,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { recognizeCardName } from '../utils/ocr';
@@ -51,12 +52,22 @@ export function ScanScreen({ navigation }: { navigation: Nav }) {
     if (!cameraRef.current || processing) return;
     setProcessing(true);
     try {
+      // skipProcessing keeps the raw sensor data; rotation is in EXIF which Vision respects.
       const photo = await cameraRef.current.takePictureAsync({
-        base64: true,
-        quality: 0.6,
+        quality: 0.8,
         skipProcessing: true,
       });
-      const name = await recognizeCardName(photo.base64!);
+
+      // The card name occupies the top ~10% of the card, and the card is vertically
+      // centred in the guide frame (~25–35% from the top of the photo). Cropping to
+      // the top 40% of the image keeps the name strip and nothing below the type line.
+      const nameStrip = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [{ crop: { originX: 0, originY: 0, width: photo.width, height: Math.floor(photo.height * 0.4) } }],
+        { base64: true, compress: 0.9, format: ImageManipulator.SaveFormat.JPEG },
+      );
+
+      const name = await recognizeCardName(nameStrip.base64!);
       if (!name) {
         Alert.alert(
           'Not recognized',

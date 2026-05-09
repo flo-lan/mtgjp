@@ -36,15 +36,25 @@ const SCRYFALL_API = 'https://api.scryfall.com';
 // Only kanji triggers lang:ja — hiragana/katakana phonetic readings won't match Scryfall's Japanese printed names
 const KANJI_RE = /[一-鿿]/;
 
+async function scryfallSearch(query: string): Promise<CardData[]> {
+  const q = KANJI_RE.test(query) ? `lang:ja ${query}` : query;
+  const response = await axios.get(`${SCRYFALL_API}/cards/search`, { params: { q } });
+  return response.data.data;
+}
+
 export async function searchCards(query: string): Promise<CardData[]> {
   try {
-    const q = KANJI_RE.test(query) ? `lang:ja ${query}` : query;
-    const response = await axios.get(`${SCRYFALL_API}/cards/search`, {
-      params: { q },
+    const results = await scryfallSearch(query);
+    if (results.length > 0) return results;
+
+    // Literal search found nothing — try Scryfall's fuzzy name lookup as a fallback.
+    // This handles OCR noise (small/large kana confusion, missing strokes) without us
+    // doing lossy text normalization that could corrupt legitimate small kana in real names.
+    const fuzzy = await axios.get(`${SCRYFALL_API}/cards/named`, {
+      params: { fuzzy: query, lang: 'ja' },
     });
-    return response.data.data;
-  } catch (error) {
-    console.error('Error searching cards:', error);
+    return [fuzzy.data];
+  } catch {
     return [];
   }
 }

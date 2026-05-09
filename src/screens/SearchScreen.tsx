@@ -495,9 +495,10 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   studySetTag: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "700",
     fontFamily: "NotoSansJP_700Bold",
+    textAlign: "center",
   },
   studySetInfo: {
     flex: 1,

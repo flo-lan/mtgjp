@@ -1,10 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text, Alert } from 'react-native';
-import DocumentScanner from 'react-native-document-scanner-plugin';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { recognizeCardName } from '../utils/ocr';
+
+// react-native-document-scanner-plugin is native-only.
+// Lazy-require so missing native binary (Expo Go / web) degrades gracefully.
+let DocumentScanner: any = null;
+let ResponseType: { ImageFilePath: string } = { ImageFilePath: 'imageFilePath' };
+try {
+  const mod = require('react-native-document-scanner-plugin');
+  DocumentScanner = mod.default;
+  ResponseType = mod.ResponseType;
+} catch {
+  // Native build required
+}
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Scan'>;
 
@@ -12,6 +23,15 @@ export function ScanScreen({ navigation }: { navigation: Nav }) {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
+    if (!DocumentScanner) {
+      Alert.alert(
+        'Native build required',
+        'Card scanning needs a development build.\nRun: npx expo run:ios  or  npx expo run:android',
+        [{ text: 'OK', onPress: () => navigation.goBack() }],
+      );
+      return;
+    }
+
     let cancelled = false;
 
     const run = async () => {
@@ -19,7 +39,7 @@ export function ScanScreen({ navigation }: { navigation: Nav }) {
         const { scannedImages, status } = await DocumentScanner.scanDocument({
           maxNumDocuments: 1,
           croppedImageQuality: 90,
-          responseType: 'imageFilePath',
+          responseType: ResponseType.ImageFilePath,
         });
 
         if (cancelled) return;
@@ -35,13 +55,11 @@ export function ScanScreen({ navigation }: { navigation: Nav }) {
 
         // Decode the perspective-corrected card image to get its dimensions.
         const cardRef = await ImageManipulator.manipulate(cardUri).renderAsync();
+        console.log('[Scan] card dimensions:', cardRef.width, 'x', cardRef.height);
 
-        // The document scanner fills the frame with the card, so the name strip
-        // is always the top ~12% of the card height.
-        const strippedRef = await ImageManipulator.manipulate(cardRef)
-          .crop({ originX: 0, originY: 0, width: cardRef.width, height: Math.floor(cardRef.height * 0.12) })
-          .renderAsync();
-        const { uri } = await strippedRef.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
+        // Send the full card to OCR (no crop) to test if ML Kit can read the Japanese text.
+        const { uri } = await cardRef.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
+        console.log('[Scan] image uri:', uri);
 
         const name = await recognizeCardName(uri);
         if (!name) {

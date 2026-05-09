@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.mtgjp"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.mtgjp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,6 +36,21 @@
       "expo-font",
       [
         "expo-camera",
+        {
+          "cameraPermission": "Allow mtgjp to access your camera to scan cards."
+        }
+      ],
+      [
+        "rn-mlkit-ocr",
+        {
+          "ocrModels": [
+            "japanese"
+          ],
+          "ocrUseBundled": true
+        }
+      ],
+      [
+        "react-native-document-scanner-plugin",
         { "cameraPermission": "Allow mtgjp to access your camera to scan cards." }
       ]
     ]

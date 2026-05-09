@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,48 +10,57 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../App';
-import { searchCards, CardData } from '../utils/scryfall';
-import { recognizeCardName } from '../utils/ocr';
-import { JA_DICT, DictEntry, WordCategory } from '../utils/dictionary';
-import { Ruby } from '../components/Ruby';
-import { WordPopup } from '../components/WordPopup';
+  Platform,
+  StatusBar,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../App";
+import { searchCards, CardData } from "../utils/scryfall";
+import { recognizeCardName } from "../utils/ocr";
+import { JA_DICT, DictEntry, groupColor } from "../utils/dictionary";
+import { Ruby } from "../components/Ruby";
+import { WordPopup } from "../components/WordPopup";
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Search'>;
-type CategoryFilter = WordCategory | 'all';
+type Nav = NativeStackNavigationProp<RootStackParamList, "Search">;
 
-const CAT_COLOR: Record<WordCategory, { border: string; bg: string; label: string }> = {
-  keyword: { border: '#C69320', bg: 'rgba(198,147,32,0.1)',  label: '#A87820' },
-  action:  { border: '#B83A28', bg: 'rgba(184,58,40,0.08)', label: '#963020' },
-  noun:    { border: '#2460A0', bg: 'rgba(36,96,160,0.08)', label: '#1A4880' },
+const GROUP_META: Record<string, { tag: string; desc: string }> = {
+  Evergreen: { tag: "常在", desc: "Core keyword abilities" },
+  Classic: { tag: "旧式", desc: "Legacy keyword abilities" },
+  "Ability Words": { tag: "能力語", desc: "Named ability words" },
+  Actions: { tag: "動作", desc: "Game actions & verbs" },
+  "Card Types": { tag: "種別", desc: "Card types & subtypes" },
+  Zones: { tag: "領域", desc: "Game zones" },
+  "Turn Structure": { tag: "フェイズ", desc: "Turn phases & steps" },
+  Properties: { tag: "特性", desc: "Card properties" },
+  "Ability Types": { tag: "能力型", desc: "Ability classifications" },
+  Colors: { tag: "色", desc: "Mana colors" },
+  "Game Terms": { tag: "用語", desc: "General game terms" },
 };
 
-const CAT_LABEL: Record<CategoryFilter, string> = {
-  all: 'All', keyword: 'Keywords', action: 'Actions', noun: 'Game Terms',
-};
-
-const FILTERS: CategoryFilter[] = ['all', 'keyword', 'action', 'noun'];
+const TOP_PAD =
+  Platform.OS === "ios" ? 54 : (StatusBar.currentHeight ?? 0) + 16;
 
 export function SearchScreen({ navigation }: { navigation: Nav }) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
   const [selectedEntry, setSelectedEntry] = useState<DictEntry | null>(null);
 
   const wotd = useMemo<DictEntry>(() => {
-    const entries = Object.values(JA_DICT).filter(e => e.reading);
+    const entries = Object.values(JA_DICT).filter((e) => e.reading);
     return entries[Math.floor(Date.now() / 86400000) % entries.length];
   }, []);
 
-  const vocabEntries = useMemo(() => {
-    const all = Object.values(JA_DICT);
-    return activeCategory === 'all' ? all : all.filter(e => e.category === activeCategory);
-  }, [activeCategory]);
+  // Term counts per group
+  const groupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const entry of Object.values(JA_DICT)) {
+      counts[entry.group] = (counts[entry.group] ?? 0) + 1;
+    }
+    return counts;
+  }, []);
 
   const handleSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
@@ -62,7 +71,10 @@ export function SearchScreen({ navigation }: { navigation: Nav }) {
   }, []);
 
   const handleScan = async () => {
-    const result = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.6 });
+    const result = await ImagePicker.launchCameraAsync({
+      base64: true,
+      quality: 1,
+    });
     if (result.canceled || !result.assets?.[0]?.base64) return;
     setScanning(true);
     try {
@@ -71,7 +83,10 @@ export function SearchScreen({ navigation }: { navigation: Nav }) {
         setQuery(name);
         await handleSearch(name);
       } else {
-        Alert.alert('Not recognized', 'Could not read card name. Try better lighting.');
+        Alert.alert(
+          "Not recognized",
+          "Could not read card name. Try better lighting.",
+        );
       }
     } finally {
       setScanning(false);
@@ -79,135 +94,187 @@ export function SearchScreen({ navigation }: { navigation: Nav }) {
   };
 
   const isSearchActive = query.trim().length > 0;
-
-  const wotdColor = CAT_COLOR[wotd.category];
+  const wotdC = groupColor(wotd.group);
 
   const renderResult = ({ item }: { item: CardData }) => (
     <TouchableOpacity
       style={styles.resultItem}
       activeOpacity={0.75}
-      onPress={() => navigation.navigate('Card', { set: item.set, collectorNumber: item.collector_number })}
+      onPress={() =>
+        navigation.navigate("Card", {
+          set: item.set,
+          collectorNumber: item.collector_number,
+        })
+      }
     >
-      {item.image_uris?.art_crop && (
-        <Image source={{ uri: item.image_uris.art_crop }} style={styles.resultThumb} />
+      {item.image_uris?.art_crop ? (
+        <Image
+          source={{ uri: item.image_uris.art_crop }}
+          style={styles.resultThumb}
+        />
+      ) : (
+        <View style={[styles.resultThumb, styles.resultThumbPlaceholder]} />
       )}
       <View style={styles.resultInfo}>
         <Text style={styles.resultName}>{item.printed_name || item.name}</Text>
-        <Text style={styles.resultType}>{item.printed_type_line || item.type_line}</Text>
-        <Text style={styles.resultSet}>{item.set.toUpperCase()} #{item.collector_number}</Text>
+        <Text style={styles.resultType}>
+          {item.printed_type_line || item.type_line}
+        </Text>
+        <Text style={styles.resultSet}>
+          {item.set.toUpperCase()} #{item.collector_number}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* ── Search bar ── */}
-      <View style={styles.searchBar}>
-        <TextInput
-          style={styles.input}
-          placeholder="English or Japanese kanji (稲妻)…"
-          placeholderTextColor="rgba(0,0,0,0.3)"
-          value={query}
-          onChangeText={setQuery}
-          onSubmitEditing={() => handleSearch(query)}
-          returnKeyType="search"
-          autoCapitalize="none"
-        />
-        {isSearchActive && (
-          <TouchableOpacity style={styles.clearBtn} onPress={() => { setQuery(''); setResults([]); }}>
-            <Text style={styles.clearBtnText}>✕</Text>
-          </TouchableOpacity>
+      {/* ── Fixed search bar ── */}
+      <View style={styles.searchBarWrap}>
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIconText}>⌕</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Lightning Bolt / 稲妻 / inazuma…"
+            placeholderTextColor="rgba(244,244,245,0.3)"
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={() => handleSearch(query)}
+            returnKeyType="search"
+            autoCapitalize="none"
+            underlineColorAndroid="transparent"
+          />
+          {isSearchActive ? (
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => {
+                setQuery("");
+                setResults([]);
+              }}
+            >
+              <Text style={styles.iconBtnText}>✕</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.iconBtn} onPress={handleScan}>
+              <Text style={styles.iconBtnText}>📷</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {!isSearchActive && (
+          <Text style={styles.searchTip}>Tip: use roman, kana, or kanji.</Text>
         )}
-        <TouchableOpacity style={styles.scanBtn} onPress={handleScan}>
-          <Text style={styles.scanBtnText}>📷</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* ── Content ── */}
+      {/* ── Content area ── */}
       {isSearchActive ? (
         loading ? (
-          <ActivityIndicator size="large" color="#888" style={styles.loader} />
+          <ActivityIndicator
+            size="large"
+            color="#E8B86B"
+            style={styles.loader}
+          />
         ) : (
           <FlatList
             data={results}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             renderItem={renderResult}
             contentContainerStyle={styles.resultList}
-            ListEmptyComponent={<Text style={styles.emptyText}>No results found.</Text>}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No results found.</Text>
+            }
           />
         )
       ) : (
-        <ScrollView contentContainerStyle={styles.dashboard} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.dashboard}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
+        >
+          {/* Hero header */}
+          <View style={styles.heroHeader}>
+            <Text style={styles.heroLabel}>mtg · jp study</Text>
+            <Text style={styles.heroTitle}>{"カードで\n日本語を学ぶ"}</Text>
+            <Text style={styles.heroSub}>
+              Search any Magic card. Read the Japanese rules text with tappable
+              glossary.
+            </Text>
+          </View>
 
           {/* Word of the Day */}
           <Text style={styles.sectionLabel}>WORD OF THE DAY</Text>
           <TouchableOpacity
-            style={[styles.wotdCard, { borderLeftColor: wotdColor.border }]}
+            style={[styles.wotdCard, { borderColor: wotdC.border }]}
             onPress={() => setSelectedEntry(wotd)}
             activeOpacity={0.8}
           >
-            <View style={[styles.wotdBadge, { backgroundColor: wotdColor.border }]}>
-              <Text style={styles.wotdBadgeText}>{wotd.category.toUpperCase()}</Text>
+            <View
+              style={[
+                styles.wotdBadge,
+                { backgroundColor: wotdC.darkBg, borderColor: wotdC.border },
+              ]}
+            >
+              <Text style={[styles.wotdBadgeText, { color: wotdC.darkLabel }]}>
+                {wotd.group.toUpperCase()}
+              </Text>
             </View>
             <Ruby
               text={wotd.word}
               reading={wotd.reading}
-              textStyle={[styles.wotdWord, { color: wotdColor.label }]}
-              readingStyle={[styles.wotdReading, { color: wotdColor.label }]}
+              textStyle={[styles.wotdWord, { color: wotdC.darkLabel }]}
+              readingStyle={{
+                color: wotdC.darkLabel,
+                opacity: 0.6,
+                fontSize: 13,
+              }}
             />
             <Text style={styles.wotdTranslation}>{wotd.translation}</Text>
           </TouchableOpacity>
 
-          {/* Vocabulary browser */}
-          <Text style={[styles.sectionLabel, { marginTop: 28 }]}>VOCABULARY</Text>
-          <View style={styles.filterRow}>
-            {FILTERS.map(cat => {
-              const active = activeCategory === cat;
-              const color = cat !== 'all' ? CAT_COLOR[cat as WordCategory] : null;
+          {/* Study sets */}
+          <Text style={[styles.sectionLabel, { marginTop: 28 }]}>
+            STUDY SETS
+          </Text>
+          <View style={styles.studySets}>
+            {Object.entries(GROUP_META).map(([group, meta]) => {
+              const c = groupColor(group);
+              const count = groupCounts[group] ?? 0;
               return (
                 <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.filterChip,
-                    active && styles.filterChipActive,
-                    active && color && { backgroundColor: color.border, borderColor: color.border },
-                  ]}
-                  onPress={() => setActiveCategory(cat)}
+                  key={group}
+                  style={styles.studySetCard}
+                  onPress={() => navigation.navigate("StudySet", { group })}
+                  activeOpacity={0.75}
                 >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                    {CAT_LABEL[cat]}
-                  </Text>
+                  <View
+                    style={[
+                      styles.studySetIcon,
+                      { backgroundColor: c.darkBg, borderColor: c.border },
+                    ]}
+                  >
+                    <Text style={[styles.studySetTag, { color: c.darkLabel }]}>
+                      {meta.tag}
+                    </Text>
+                  </View>
+                  <View style={styles.studySetInfo}>
+                    <Text style={styles.studySetName}>{group}</Text>
+                    <Text style={styles.studySetDesc}>{meta.desc}</Text>
+                  </View>
+                  <View style={styles.studySetRight}>
+                    <Text style={styles.studySetCount}>{count}</Text>
+                    <Text style={styles.studySetArrow}>›</Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <View style={styles.wordGrid}>
-            {vocabEntries.map(entry => {
-              const c = CAT_COLOR[entry.category];
-              return (
-                <TouchableOpacity
-                  key={entry.word}
-                  style={[styles.wordChip, { borderColor: c.border, backgroundColor: c.bg }]}
-                  onPress={() => setSelectedEntry(entry)}
-                  activeOpacity={0.7}
-                >
-                  <Ruby
-                    text={entry.word}
-                    reading={entry.reading}
-                    textStyle={[styles.wordChipJa, { color: c.label }]}
-                    readingStyle={{ color: c.label, opacity: 0.65 }}
-                  />
-                  <Text style={styles.wordChipEn}>{entry.translation}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
+          <View style={{ height: 40 }} />
         </ScrollView>
       )}
 
-      {/* Scan OCR overlay */}
+      {/* Scan overlay */}
       {scanning && (
         <View style={styles.scanOverlay}>
           <ActivityIndicator size="large" color="#fff" />
@@ -223,51 +290,62 @@ export function SearchScreen({ navigation }: { navigation: Nav }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: "#0B0E14",
   },
 
   // Search bar
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+  searchBarWrap: {
+    paddingTop: TOP_PAD,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: "#0B0E14",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: "rgba(255,255,255,0.07)",
+  },
+  searchBar: {
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: "#1B2030",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 14,
+    paddingRight: 50,
+  },
+  searchIconText: {
+    fontSize: 18,
+    color: "rgba(244,244,245,0.38)",
+    marginRight: 8,
+    flexShrink: 0,
   },
   input: {
     flex: 1,
-    height: 38,
-    backgroundColor: '#f2f2f7',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    height: 50,
     fontSize: 15,
-    color: '#000',
+    color: "#F4F4F5",
+    fontFamily: "NotoSansJP_400Regular",
+    padding: 0,
+    minWidth: 0,
   },
-  clearBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#e0e0e0',
-    alignItems: 'center',
-    justifyContent: 'center',
+  iconBtn: {
+    position: "absolute",
+    right: 7,
+    top: 7,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  clearBtnText: {
+  iconBtnText: {
+    fontSize: 16,
+    color: "rgba(244,244,245,0.62)",
+  },
+  searchTip: {
     fontSize: 11,
-    color: '#666',
-  },
-  scanBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#f2f2f7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scanBtnText: {
-    fontSize: 20,
+    color: "rgba(244,244,245,0.38)",
+    marginTop: 8,
+    paddingLeft: 4,
+    letterSpacing: 0.3,
   },
 
   loader: {
@@ -279,166 +357,189 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   resultItem: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    flexDirection: "row",
+    backgroundColor: "#141821",
+    borderRadius: 14,
     marginBottom: 10,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
-    elevation: 2,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
   },
   resultThumb: {
     width: 80,
     height: 56,
-    backgroundColor: '#ddd',
+  },
+  resultThumbPlaceholder: {
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
   resultInfo: {
     flex: 1,
     padding: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   resultName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 2,
-    color: '#111',
+    color: "#F4F4F5",
+    fontFamily: "NotoSansJP_700Bold",
   },
   resultType: {
     fontSize: 12,
-    color: '#666',
+    color: "rgba(244,244,245,0.62)",
     marginBottom: 2,
+    fontFamily: "NotoSansJP_400Regular",
   },
   resultSet: {
     fontSize: 11,
-    color: '#aaa',
+    color: "rgba(244,244,245,0.38)",
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 48,
-    color: '#999',
+    color: "rgba(244,244,245,0.38)",
     fontSize: 15,
   },
 
   // Dashboard
   dashboard: {
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 40,
+  },
+  heroHeader: {
+    paddingTop: 20,
+    paddingBottom: 28,
+  },
+  heroLabel: {
+    fontSize: 11,
+    color: "rgba(244,244,245,0.38)",
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: "#F4F4F5",
+    fontFamily: "NotoSansJP_700Bold",
+    lineHeight: 40,
+    marginBottom: 10,
+  },
+  heroSub: {
+    fontSize: 14,
+    color: "rgba(244,244,245,0.62)",
+    lineHeight: 22,
+    fontFamily: "NotoSansJP_400Regular",
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1.5,
-    color: 'rgba(0,0,0,0.35)',
+    color: "rgba(244,244,245,0.38)",
     marginBottom: 10,
   },
 
   // Word of the Day
   wotdCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#141821",
     borderRadius: 14,
     padding: 18,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 1,
   },
   wotdBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    alignSelf: "flex-start",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
     marginBottom: 12,
   },
   wotdBadgeText: {
-    color: '#fff',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.8,
   },
   wotdWord: {
     fontSize: 38,
-    fontWeight: '700',
+    fontWeight: "700",
+    fontFamily: "NotoSansJP_700Bold",
     marginBottom: 4,
-  },
-  wotdReading: {
-    fontSize: 14,
-    opacity: 0.6,
   },
   wotdTranslation: {
     fontSize: 18,
-    color: 'rgba(0,0,0,0.4)',
+    color: "rgba(244,244,245,0.62)",
     marginTop: 6,
+    fontFamily: "NotoSansJP_400Regular",
   },
 
-  // Category filter
-  filterRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-    flexWrap: 'wrap',
-  },
-  filterChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: '#e8e8ed',
+  // Study sets
+  studySets: {},
+  studySetCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141821",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "rgba(255,255,255,0.07)",
+    padding: 14,
+    marginBottom: 8,
   },
-  filterChipActive: {
-    backgroundColor: '#333',
-    borderColor: '#333',
-  },
-  filterChipText: {
-    fontSize: 13,
-    color: '#555',
-    fontWeight: '500',
-  },
-  filterChipTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-
-  // Word grid
-  wordGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  wordChip: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    borderWidth: 1,
+  studySetIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    gap: 6,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginRight: 14,
   },
-  wordChipJa: {
+  studySetTag: {
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: "NotoSansJP_700Bold",
+  },
+  studySetInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  studySetName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "600",
+    color: "#F4F4F5",
+    fontFamily: "NotoSansJP_400Regular",
   },
-  wordChipEn: {
+  studySetDesc: {
     fontSize: 11,
-    color: 'rgba(0,0,0,0.4)',
-    marginBottom: 1,
+    color: "rgba(244,244,245,0.38)",
+    marginTop: 2,
+    letterSpacing: 0.3,
+  },
+  studySetRight: {
+    alignItems: "flex-end",
+    flexShrink: 0,
+  },
+  studySetCount: {
+    fontSize: 13,
+    color: "rgba(244,244,245,0.38)",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  studySetArrow: {
+    fontSize: 18,
+    color: "rgba(244,244,245,0.25)",
   },
 
   // Scan overlay
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   scanOverlayText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
+    marginTop: 12,
   },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, View, Pressable } from 'react-native';
-import { JA_DICT, SORTED_DICT_KEYS, DictEntry, WordCategory } from '../utils/dictionary';
+import { JA_DICT, SORTED_DICT_KEYS, DictEntry, WordCategory, groupColor } from '../utils/dictionary';
 import ManaSymbol from './native-mtg-card/ManaSymbol';
 import { Ruby } from './Ruby';
 
@@ -8,6 +8,8 @@ interface Props {
   text: string;
   onWordSelect: (entry: DictEntry) => void;
   showFurigana?: boolean;
+  fontSize?: number;
+  dark?: boolean;
   style?: any;
 }
 
@@ -15,42 +17,13 @@ const TOKEN_REGEX = new RegExp(
   `(${SORTED_DICT_KEYS.join('|')}|\\{[A-Za-z0-9/]+\\})`,
 );
 
-// Grammar particles are not visually marked — they appear too frequently
-// and clutter the text. They remain accessible via the VocabPanel.
 const INTERACTIVE_CATEGORIES = new Set<WordCategory>(['keyword', 'action', 'noun']);
 
-const chipStyle: Record<'keyword' | 'action' | 'noun', any> = {
-  keyword: {
-    backgroundColor: 'rgba(175,128,18,0.17)',
-    borderWidth: 1,
-    borderColor: '#8B6018',
-    borderRadius: 3,
-    paddingHorizontal: 3,
-    marginHorizontal: 1,
-    justifyContent: 'center',
-  },
-  action: {
-    backgroundColor: 'rgba(0,0,0,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.28)',
-    borderRadius: 2,
-    paddingHorizontal: 2,
-    marginHorizontal: 1,
-    justifyContent: 'center',
-  },
-  noun: {
-    backgroundColor: 'rgba(0,0,0,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.16)',
-    borderRadius: 2,
-    paddingHorizontal: 2,
-    marginHorizontal: 1,
-    justifyContent: 'center',
-  },
-};
-
-export function InteractiveText({ text, onWordSelect, showFurigana = false, style }: Props) {
+export function InteractiveText({ text, onWordSelect, showFurigana = false, fontSize = 16, dark = false, style }: Props) {
   if (!text) return null;
+
+  const lineHeight = Math.round(fontSize * 1.55);
+  const baseColor = dark ? '#F4F4F5' : 'black';
 
   return (
     <View>
@@ -61,32 +34,46 @@ export function InteractiveText({ text, onWordSelect, showFurigana = false, styl
 
             if (part.startsWith('{') && part.endsWith('}')) {
               return (
-                <View key={i} style={styles.symbolWrapper}>
-                  <ManaSymbol symbol={part.slice(1, -1)} size={16} margin={0} />
+                <View key={i} style={[styles.symbolWrapper, { height: lineHeight }]}>
+                  <ManaSymbol symbol={part.slice(1, -1)} size={fontSize} margin={0} />
                 </View>
               );
             }
 
             const entry = JA_DICT[part];
             if (entry && INTERACTIVE_CATEGORIES.has(entry.category)) {
-              const isKeyword = entry.category === 'keyword';
+              const gc = groupColor(entry.group);
+              const bg = dark ? gc.darkBg : gc.lightBg;
+              const fg = dark ? gc.darkLabel : gc.lightText;
               return (
                 <Pressable
                   key={i}
-                  style={chipStyle[entry.category as 'keyword' | 'action' | 'noun']}
+                  style={{
+                    backgroundColor: bg,
+                    borderWidth: 1,
+                    borderColor: gc.border,
+                    borderRadius: 3,
+                    paddingHorizontal: 3,
+                    marginHorizontal: 1,
+                    justifyContent: 'center',
+                  }}
                   onPress={() => onWordSelect(entry)}
                 >
                   <Ruby
                     text={part}
                     reading={showFurigana ? entry.reading : undefined}
-                    textStyle={[styles.baseText, isKeyword && styles.keywordText, style]}
-                    readingStyle={isKeyword ? styles.keywordReading : undefined}
+                    textStyle={[{ fontFamily: 'NotoSansJP_400Regular', fontSize, lineHeight, color: fg }, style]}
+                    readingStyle={{ color: fg, opacity: 0.55 }}
                   />
                 </Pressable>
               );
             }
 
-            return <Text key={i} style={[styles.baseText, style]}>{part}</Text>;
+            return (
+              <Text key={i} style={[{ fontFamily: 'NotoSansJP_400Regular', fontSize, lineHeight, color: baseColor }, style]}>
+                {part}
+              </Text>
+            );
           })}
         </View>
       ))}
@@ -104,18 +91,6 @@ const styles = StyleSheet.create({
   symbolWrapper: {
     alignSelf: 'flex-end',
     marginHorizontal: 1,
-  },
-  baseText: {
-    fontFamily: 'NotoSansJP_400Regular',
-    fontSize: 16,
-    color: 'black',
-    lineHeight: 22,
-  },
-  keywordText: {
-    fontFamily: 'NotoSansJP_700Bold',
-    color: '#4A2800',
-  },
-  keywordReading: {
-    color: 'rgba(74,40,0,0.5)',
+    justifyContent: 'flex-end',
   },
 });

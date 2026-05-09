@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { extractVocab, DictEntry, WordCategory } from "../utils/dictionary";
+import { extractVocab, DictEntry, WordCategory, groupColor } from "../utils/dictionary";
 import { Ruby } from "./Ruby";
 
 interface Props {
@@ -8,28 +8,15 @@ interface Props {
   onWordSelect: (entry: DictEntry) => void;
 }
 
-const CATEGORY_ORDER: WordCategory[] = ["keyword", "action", "noun", "grammar"];
+const CATEGORY_ORDER: WordCategory[] = ["keyword", "action", "noun"];
 
 const SECTION_LABEL: Record<WordCategory, string> = {
   keyword: "Keywords",
   action: "Actions",
   noun: "Game Terms",
-  grammar: "Grammar",
-};
-
-const CHIP_STYLE: Record<
-  WordCategory,
-  { border: string; bg: string; label: string }
-> = {
-  keyword: { border: "#C69320", bg: "rgba(198,147,32,0.13)", label: "#E8B630" },
-  action: { border: "#B83A28", bg: "rgba(184,58,40,0.1)", label: "#E05540" },
-  noun: { border: "#2460A0", bg: "rgba(36,96,160,0.1)", label: "#4B8ED4" },
-  grammar: { border: "#4A5562", bg: "rgba(74,85,98,0.1)", label: "#8090A0" },
 };
 
 export function VocabPanel({ text, onWordSelect }: Props) {
-  const [grammarOpen, setGrammarOpen] = useState(false);
-
   const vocab = extractVocab(text);
   if (vocab.length === 0) return null;
 
@@ -46,38 +33,34 @@ export function VocabPanel({ text, onWordSelect }: Props) {
       <Text style={styles.panelTitle}>VOCABULARY</Text>
 
       {(Object.entries(grouped) as [WordCategory, DictEntry[]][]).map(
-        ([cat, entries]) => {
-          const s = CHIP_STYLE[cat];
+        ([cat, entries]) => (
+          <View key={cat} style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: 'rgba(255,255,255,0.35)' }]}>
+              {SECTION_LABEL[cat]}
+            </Text>
 
-          return (
-            <View key={cat} style={styles.section}>
-              <Text style={[styles.sectionLabel, { color: s.label }]}>
-                {SECTION_LABEL[cat]}
-              </Text>
-
-              <View style={styles.chips}>
-                {entries.map((entry) => (
+            <View style={styles.chips}>
+              {entries.map((entry) => {
+                const gc = groupColor(entry.group);
+                return (
                   <Pressable
                     key={entry.word}
-                    style={[
-                      styles.chip,
-                      { borderColor: s.border, backgroundColor: s.bg },
-                    ]}
+                    style={[styles.chip, { borderColor: gc.border, backgroundColor: gc.darkBg }]}
                     onPress={() => onWordSelect(entry)}
                   >
                     <Ruby
                       text={entry.word}
                       reading={entry.reading}
-                      textStyle={[styles.chipJa, { color: s.label }]}
-                      readingStyle={{ color: s.label, opacity: 0.55 }}
+                      textStyle={[styles.chipJa, { color: gc.darkLabel }]}
+                      readingStyle={{ color: gc.darkLabel, opacity: 0.55 }}
                     />
                     <Text style={styles.chipEn}>{entry.translation}</Text>
                   </Pressable>
-                ))}
-              </View>
+                );
+              })}
             </View>
-          );
-        },
+          </View>
+        ),
       )}
     </View>
   );
@@ -85,11 +68,13 @@ export function VocabPanel({ text, onWordSelect }: Props) {
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: "#222",
+    backgroundColor: "#141821",
     borderRadius: 16,
     padding: 16,
     marginTop: 16,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   panelTitle: {
     fontFamily: "NotoSansJP_700Bold",

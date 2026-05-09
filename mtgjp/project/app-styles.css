@@ -1,0 +1,119 @@
+/* MTG-JP — design tokens. */
+:root {
+  --bg-canvas: #0F1116;
+  --bg-app: #0B0E14;
+  --bg-surface: #141821;
+  --bg-surface-2: #1B2030;
+  --bg-elevated: #1F2536;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #F4F4F5;
+  --text-secondary: rgba(244, 244, 245, 0.62);
+  --text-tertiary: rgba(244, 244, 245, 0.38);
+  --accent: #E8B86B;
+  --accent-soft: rgba(232, 184, 107, 0.14);
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.4);
+}
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg-canvas);
+  font-family: 'Geist', 'Helvetica Neue', system-ui, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Japanese text — slightly looser leading for kanji */
+.jp {
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  font-feature-settings: 'palt';
+  line-height: 1.7;
+}
+
+/* Furigana wrapper using <ruby> */
+ruby rt {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.45em;
+  color: var(--text-tertiary);
+  font-weight: 400;
+  letter-spacing: 0;
+  user-select: none;
+  margin-bottom: 1px;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  font-feature-settings: 'ss02', 'cv11';
+}
+
+/* keyword pill styles */
+.kw-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px 3px;
+  border-radius: 7px;
+  margin: 0 2px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.96em;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  position: relative;
+  white-space: nowrap;
+}
+.kw-pill:active { transform: scale(0.96); }
+.kw-pill.flat { background: transparent; padding: 0 2px; border-radius: 0; }
+.kw-pill.underline { background: transparent; padding: 0 2px; border-radius: 0; border-bottom: 2px solid currentColor; }
+.kw-pill.box { border: 1px solid; }
+
+/* card art placeholder — abstract atmospheric, NOT the trademarked frame */
+.art-plate {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: var(--shadow-card);
+}
+.art-plate::before {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,0.18), transparent 60%),
+    radial-gradient(80% 100% at 50% 100%, rgba(0,0,0,0.55), transparent 70%);
+}
+.art-plate::after {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background-image:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 14px);
+}
+
+/* dotted connector line from keyword in text to glossary chip */
+.connector {
+  stroke-dasharray: 2 4;
+  stroke-width: 1.2;
+  fill: none;
+}
+
+/* reveal/fade utility */
+.reveal { animation: reveal 320ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* sheet up animation */
+.sheet-up { animation: sheetUp 280ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
+
+/* iOS scrollbar hide */
+.scroll::-webkit-scrollbar { display: none; }
+.scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* tap target */
+button, .tap { -webkit-tap-highlight-color: transparent; user-select: none; }
+
+/* input reset */
+input { font-family: inherit; outline: none; border: none; background: transparent; color: inherit; }

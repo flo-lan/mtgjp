@@ -2,6 +2,7 @@ import axios from 'axios';
 
 export interface CardData {
   id: string;
+  oracle_id?: string;
   name: string;
   printed_name?: string;
   type_line: string;
@@ -45,6 +46,25 @@ export async function searchCards(query: string): Promise<CardData[]> {
   } catch (error) {
     console.error('Error searching cards:', error);
     return [];
+  }
+}
+
+/**
+ * Fetches the English printing of a card, preferring the same set as the JA card.
+ */
+export async function getEnglishCard(oracleId: string, preferredSet?: string): Promise<CardData | null> {
+  try {
+    const response = await axios.get(`${SCRYFALL_API}/cards/search`, {
+      params: { q: `lang:en oracleid:${oracleId} game:paper`, order: 'released', dir: 'desc' },
+    });
+    const cards: CardData[] = response.data.data ?? [];
+    if (preferredSet) {
+      const sameSet = cards.find(c => c.set === preferredSet);
+      if (sameSet) return sameSet;
+    }
+    return cards[0] ?? null;
+  } catch {
+    return null;
   }
 }
 

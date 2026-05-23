@@ -13,6 +13,7 @@ import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { getJapaneseCard, getEnglishCard, CardData } from '../utils/scryfall';
+import { useFavoriteCard } from '../utils/favorites';
 import { DictEntry, extractVocab, groupColor } from '../utils/dictionary';
 import { CardRenderer } from '../components/CardRenderer';
 import { InteractiveText } from '../components/InteractiveText';
@@ -62,7 +63,7 @@ export function CardScreen({ route, navigation }: Props) {
   const [enCard, setEnCard] = useState<CardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState<DictEntry | null>(null);
-  const [isFav, setIsFav] = useState(false);
+  const { isFav, toggle: toggleFav } = useFavoriteCard(set, collectorNumber);
   const [showFurigana, setShowFurigana] = useState(false);
   const [showEn, setShowEn] = useState(false);
 
@@ -113,16 +114,18 @@ export function CardScreen({ route, navigation }: Props) {
           <Text style={styles.topBarBtnText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.topBarCode}>{card.set.toUpperCase()} #{card.collector_number}</Text>
-        <View style={styles.topBarRight}>
-          <TouchableOpacity onPress={() => setIsFav(v => !v)} style={styles.topBarBtn}>
-            <Text style={[styles.topBarBtnText, isFav && styles.favActive]}>
-              {isFav ? '♥' : '♡'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.topBarBtn}>
-            <Text style={styles.topBarBtnText}>···</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => toggleFav({
+            name: card?.name ?? '',
+            printedName: card?.printed_name,
+            imageUri: card?.image_uris?.art_crop,
+          })}
+          style={styles.topBarBtn}
+        >
+          <Text style={[styles.topBarBtnText, isFav && styles.favActive]}>
+            {isFav ? '♥' : '♡'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -265,11 +268,6 @@ const styles = StyleSheet.create({
     color: 'rgba(244,244,245,0.38)',
     textTransform: 'uppercase',
   },
-  topBarRight: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-
   scroll: {
     paddingBottom: 40,
   },

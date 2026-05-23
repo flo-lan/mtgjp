@@ -46,7 +46,7 @@ export function SearchScreen({ navigation, route }: Props) {
 
   const wotd = useMemo<DictEntry>(() => {
     const entries = Object.values(JA_DICT).filter((e) => e.reading);
-    return entries[Math.floor(Date.now() / 86400000) % entries.length];
+    return entries[(Math.floor(Date.now() / 86400000) + 11) % entries.length];
   }, []);
 
   // Term counts per group
@@ -73,6 +73,14 @@ export function SearchScreen({ navigation, route }: Props) {
       handleSearch(scanResult);
     }
   }, [route.params?.scanResult]);
+
+  useEffect(() => {
+    const searchQuery = route.params?.searchQuery;
+    if (searchQuery) {
+      setQuery(searchQuery);
+      handleSearch(searchQuery);
+    }
+  }, [route.params?.searchQuery]);
 
   const handleScan = () => navigation.navigate("Scan");
 
@@ -505,5 +513,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "rgba(244,244,245,0.25)",
   },
-
 });

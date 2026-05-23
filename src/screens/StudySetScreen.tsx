@@ -14,6 +14,7 @@ import { RootStackParamList } from '../../App';
 import { JA_DICT, DictEntry, groupColor } from '../utils/dictionary';
 import { Ruby } from '../components/Ruby';
 import { WordPopup } from '../components/WordPopup';
+import { useStudy } from '../context/StudyContext';
 
 type StudySetRouteProp = RouteProp<RootStackParamList, 'StudySet'>;
 type StudySetNavProp = NativeStackNavigationProp<RootStackParamList, 'StudySet'>;
@@ -28,11 +29,18 @@ const TOP_PAD = Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight ?? 0) + 16
 export function StudySetScreen({ route, navigation }: Props) {
   const { group } = route.params;
   const [selectedEntry, setSelectedEntry] = useState<DictEntry | null>(null);
+  const { addWord, hasWord } = useStudy();
 
   const entries = useMemo(
     () => Object.values(JA_DICT).filter(e => e.group === group),
     [group],
   );
+
+  const allAdded = entries.every(e => hasWord(e.word));
+
+  const handleAddAll = () => {
+    entries.forEach(e => addWord(e.word));
+  };
 
   const c = groupColor(group);
 
@@ -47,7 +55,15 @@ export function StudySetScreen({ route, navigation }: Props) {
           <Text style={styles.topBarGroup}>{group}</Text>
           <Text style={styles.topBarCount}>{entries.length} terms</Text>
         </View>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity
+          onPress={handleAddAll}
+          disabled={allAdded}
+          style={[styles.addAllBtn, allAdded && styles.addAllBtnDone]}
+        >
+          <Text style={[styles.addAllBtnText, allAdded && styles.addAllBtnTextDone]}>
+            {allAdded ? 'Added ✓' : 'Add all'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -144,5 +160,24 @@ const styles = StyleSheet.create({
     color: 'rgba(244,244,245,0.45)',
     fontFamily: 'NotoSansJP_400Regular',
     marginTop: 3,
+  },
+  addAllBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  addAllBtnDone: {
+    borderColor: 'rgba(42,158,92,0.45)',
+    backgroundColor: 'rgba(42,158,92,0.12)',
+  },
+  addAllBtnText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#F4F4F5',
+  },
+  addAllBtnTextDone: {
+    color: '#44C87A',
   },
 });

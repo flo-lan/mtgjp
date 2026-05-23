@@ -1,7 +1,9 @@
 import React from "react";
 import { View, Text, Pressable, TouchableOpacity, StyleSheet } from "react-native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { DictEntry, groupColor } from "../utils/dictionary";
 import { Ruby } from "./Ruby";
+import { useStudy } from "../context/StudyContext";
 
 interface Props {
   entry: DictEntry | null;
@@ -9,9 +11,31 @@ interface Props {
 }
 
 export function WordPopup({ entry, onClose }: Props) {
+  const { hasWord, addWord, removeWord } = useStudy();
+  const navigation = useNavigation();
+
   if (!entry) return null;
 
+  const handleSeeCards = () => {
+    onClose();
+    navigation.dispatch(
+      CommonActions.navigate('Home', {
+        screen: 'Search',
+        params: { searchQuery: `o:"${entry.word}"` },
+      }),
+    );
+  };
+
   const c = groupColor(entry.group);
+  const saved = hasWord(entry.word);
+
+  const handleSave = () => {
+    if (saved) {
+      removeWord(entry.word);
+    } else {
+      addWord(entry.word);
+    }
+  };
 
   return (
     <Pressable style={styles.overlay} onPress={onClose}>
@@ -41,20 +65,20 @@ export function WordPopup({ entry, onClose }: Props) {
           />
         </View>
 
-        {/* Reading in mono */}
-        {entry.reading ? (
-          <Text style={styles.kana}>{entry.reading}</Text>
-        ) : null}
-
         {/* EN translation */}
         <Text style={styles.translation}>{entry.translation}</Text>
 
         {/* Action row */}
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionBtnOutline}>
-            <Text style={styles.actionBtnOutlineText}>Save term</Text>
+          <TouchableOpacity
+            style={[styles.actionBtnOutline, saved && styles.actionBtnSaved]}
+            onPress={handleSave}
+          >
+            <Text style={[styles.actionBtnOutlineText, saved && styles.actionBtnSavedText]}>
+              {saved ? "Saved ✓" : "Add to Study"}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtnFill, { backgroundColor: c.darkLabel }]}>
+          <TouchableOpacity style={[styles.actionBtnFill, { backgroundColor: c.darkLabel }]} onPress={handleSeeCards}>
             <Text style={styles.actionBtnFillText}>See cards using →</Text>
           </TouchableOpacity>
         </View>
@@ -131,12 +155,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "rgba(244,244,245,0.38)",
   },
-  kana: {
-    fontSize: 13,
-    color: "rgba(244,244,245,0.38)",
-    letterSpacing: 0.4,
-    marginBottom: 4,
-  },
   translation: {
     fontSize: 17,
     color: "#F4F4F5",
@@ -157,10 +175,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  actionBtnSaved: {
+    borderColor: "rgba(42,158,92,0.45)",
+    backgroundColor: "rgba(42,158,92,0.12)",
+  },
   actionBtnOutlineText: {
     color: "#F4F4F5",
     fontSize: 14,
     fontWeight: "500",
+  },
+  actionBtnSavedText: {
+    color: "#44C87A",
   },
   actionBtnFill: {
     flex: 1,

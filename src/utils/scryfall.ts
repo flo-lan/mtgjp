@@ -26,6 +26,7 @@ export interface CardData {
   rarity?: string;
   flavor_text?: string;
   artist?: string;
+  image_status?: 'highres_scan' | 'lowres' | 'placeholder' | 'missing';
 }
 
 const SCRYFALL_API = 'https://api.scryfall.com';
@@ -71,6 +72,28 @@ export async function getEnglishCard(oracleId: string, preferredSet?: string): P
     if (preferredSet) {
       const sameSet = cards.find(c => c.set === preferredSet);
       if (sameSet) return sameSet;
+    }
+    return cards[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Finds a popular Japanese card whose oracle text contains the given English term.
+ * Strips parentheticals from translations like "Exile (zone)" → "Exile".
+ * Among the edhrec-sorted results, picks the best image quality tier first.
+ */
+export async function getExampleCard(translation: string): Promise<CardData | null> {
+  const term = translation.replace(/\s*\(.*\)/, '').trim();
+  try {
+    const res = await axios.get(`${SCRYFALL_API}/cards/search`, {
+      params: { q: `lang:ja o:"${term}"`, order: 'edhrec', dir: 'desc' },
+    });
+    const cards = res.data.data as CardData[];
+    for (const tier of ['highres_scan', 'lowres', 'placeholder', 'missing'] as const) {
+      const match = cards.find(c => (c.image_status ?? 'missing') === tier);
+      if (match) return match;
     }
     return cards[0] ?? null;
   } catch {

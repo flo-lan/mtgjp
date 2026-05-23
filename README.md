@@ -2,19 +2,15 @@
 
 A React Native app for learning Japanese through Magic: The Gathering cards. Search any card, read the Japanese rules text with an interactive tappable glossary, and build a personal vocabulary deck with spaced repetition reviews.
 
-![Main Screen](screenshots/mainscreen.png)
+<img src="screenshots/mainscreen.png" width="320" alt="Main Screen" />
 
 ---
 
 ## Screenshots
 
-| Card View | Rules Text | Keyword Popup |
-|:---------:|:----------:|:-------------:|
-| ![Card](screenshots/card_render.png) | ![Rules](screenshots/rulestext.png) | ![Popup](screenshots/keyword_popup.png) |
-
-| Study Screen | Favorites |
-|:------------:|:---------:|
-| ![Study](screenshots/sutdyscreen.png) | ![Favorites](screenshots/favoritescreen.png) |
+| Card View | Rules Text | Keyword Popup | Study Screen | Favorites |
+|:---------:|:----------:|:-------------:|:------------:|:---------:|
+| <img src="screenshots/card_render.png" width="160" /> | <img src="screenshots/rulestext.png" width="160" /> | <img src="screenshots/keyword_popup.png" width="160" /> | <img src="screenshots/sutdyscreen.png" width="160" /> | <img src="screenshots/favoritescreen.png" width="160" /> |
 
 ---
 
